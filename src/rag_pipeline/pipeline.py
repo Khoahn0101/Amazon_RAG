@@ -122,7 +122,6 @@ Output: {{"clean_query": "", "language": "Vietnamese", "price_max": null, "stars
         raw_text = response.content.strip()
         # Clean markdown ticks if any
         if raw_text.startswith("```"):
-            import re
             raw_text = re.sub(r'^```[a-zA-Z]*\n', '', raw_text)
             raw_text = re.sub(r'\n```$', '', raw_text).strip()
             
