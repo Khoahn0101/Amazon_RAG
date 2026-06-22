@@ -37,10 +37,12 @@ wheels/
 .env.local
 
 # Data and models
-data/
+data/chunks.jsonl
 models/
 *.csv
 *.json
+!data/categories.json
+!data/showcase.json
 
 # Jupyter
 .ipynb_checkpoints/

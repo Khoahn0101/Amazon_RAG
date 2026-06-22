@@ -11,7 +11,7 @@ from langchain_core.prompts import PromptTemplate
 load_dotenv()
 
 class RAGPipeline:
-    def __init__(self, data_path: str = 'data/chunks.jsonl'):
+    def __init__(self, data_path: str = 'data/categories.json'):
         # 1. Initialize embedding model
         print("Loading local embedding model...")
         self.embedding_model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
@@ -56,18 +56,12 @@ class RAGPipeline:
         self.valid_categories = self._load_categories(data_path)
 
     def _load_categories(self, data_path: str) -> list:
-        categories = set()
         try:
-            import json
             with open(data_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if line.strip():
-                        cat = json.loads(line).get('metadata', {}).get('category')
-                        if cat:
-                            categories.add(cat)
+                return json.load(f)
         except Exception as e:
-            print(f"Warning: Could not load categories from chunks.jsonl: {e}")
-        return sorted(list(categories))
+            print(f"Warning: Could not load categories from {data_path}: {e}")
+            return []
         
     def preprocess_query(self, user_query: str, chat_history: list = None) -> dict:
         """

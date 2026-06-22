@@ -105,25 +105,14 @@ st.markdown("""
 
 @st.cache_resource
 def load_pipeline():
-    return RAGPipeline(data_path="data/chunks.jsonl")
+    return RAGPipeline(data_path="data/categories.json")
 
 @st.cache_data
-def load_showcase_products(data_path="data/chunks.jsonl", num_products=4):
+def load_showcase_products(data_path="data/showcase.json", num_products=4):
     products = []
     try:
         with open(data_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                if line.strip():
-                    chunk = json.loads(line)
-                    meta = chunk.get('metadata', {})
-                    if meta.get('imgUrl') and meta.get('productURL') and 'http' in meta.get('imgUrl'):
-                        products.append({
-                            'title': chunk.get('text').split('\n')[0].replace('Product Name:', '').strip(),
-                            'price': meta.get('price'),
-                            'stars': meta.get('stars'),
-                            'imgUrl': meta.get('imgUrl'),
-                            'productURL': meta.get('productURL')
-                        })
+            products = json.load(f)
     except Exception as e:
         print(f"Error loading showcase: {e}")
     
