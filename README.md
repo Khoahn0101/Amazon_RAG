@@ -6,7 +6,7 @@ A Retrieval-Augmented Generation (RAG) chatbot that answers questions about prod
 
 ```
 rag-chatbot/
-├── data/                  # Your Kaggle dataset
+├── data/                  # Kaggle dataset
 ├── models/               # Trained models and embeddings
 ├── src/
 │   ├── data_loader.py   # Load and process CSV data
@@ -15,29 +15,8 @@ rag-chatbot/
 │   └── rag_pipeline.py  # LangChain RAG logic
 ├── app.py               # Streamlit UI
 ├── requirements.txt     # Python dependencies
-└── README.md           # This file
+└── README.md           
 ```
-
-## Setup
-
-1. **Create and activate virtual environment**:
-   ```powershell
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1
-   ```
-
-2. **Install dependencies**:
-   ```powershell
-   pip install -r requirements.txt
-   ```
-
-3. **Add your Kaggle dataset**:
-   - Place your CSV file in the `data/` folder
-
-4. **Run the app**:
-   ```powershell
-   streamlit run app.py
-   ```
 
 ## Features
 
@@ -56,18 +35,9 @@ rag-chatbot/
 
 ## Learning Goals
 
-This project teaches:
+This project:
 1. Data chunking strategies
 2. Vector embeddings and cosine similarity
 3. RAG architecture
 4. LLM prompt engineering
 5. Full-stack ML deployment
-
-## Next Steps
-
-- [ ] Load and explore Kaggle dataset
-- [ ] Implement data pipeline
-- [ ] Create vector embeddings
-- [ ] Build RAG pipeline
-- [ ] Create Streamlit UI
-- [ ] Deploy to production
