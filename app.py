@@ -230,3 +230,4 @@ if prompt:
                         render_product_card(p)
                         
     st.session_state.messages.append({"role": "assistant", "content": answer, "products": product_list})
+# Force reload 1
