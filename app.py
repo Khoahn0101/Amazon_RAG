@@ -166,6 +166,9 @@ st.markdown("</div>", unsafe_allow_html=True)
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "last_retrieved_docs" not in st.session_state:
+    st.session_state.last_retrieved_docs = None
+
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -182,7 +185,12 @@ if prompt := st.chat_input("What are you looking for today?"):
 
     with st.chat_message("assistant"):
         with st.spinner("Searching for the best products..."):
-            answer, docs = pipeline.answer_question(prompt)
+            answer, docs = pipeline.answer_question(
+                prompt, 
+                chat_history=st.session_state.messages[:-1], 
+                previous_docs=st.session_state.last_retrieved_docs
+            )
+            st.session_state.last_retrieved_docs = docs
             st.markdown(answer)
             
             product_list = []
