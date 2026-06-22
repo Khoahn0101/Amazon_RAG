@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 langchain==0.1.0
 langchain-community==0.0.10
 qdrant-client>=1.7.3
