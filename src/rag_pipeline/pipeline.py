@@ -120,6 +120,12 @@ Output: {{"clean_query": "", "language": "Vietnamese", "price_max": null, "stars
         ])
         
         raw_text = response.content.strip()
+        # Clean markdown ticks if any
+        if raw_text.startswith("```"):
+            import re
+            raw_text = re.sub(r'^```[a-zA-Z]*\n', '', raw_text)
+            raw_text = re.sub(r'\n```$', '', raw_text).strip()
+            
         # Find JSON block using regex to avoid parsing issues if the LLM output includes extra conversational text
         json_match = re.search(r'\{.*\}', raw_text, re.DOTALL)
         if json_match:
@@ -254,9 +260,19 @@ Output: {{"clean_query": "", "language": "Vietnamese", "price_max": null, "stars
         context = "\n---\n".join(context_items) if context_items else "No matching products found."
 
         
+        history_lines = []
+        if chat_history:
+            for msg in chat_history[-4:]:
+                role = "User" if msg["role"] == "user" else "Assistant"
+                content = msg["content"]
+                if len(content) > 300:
+                    content = content[:300] + "..."
+                history_lines.append(f"{role}: {content}")
+        history_context = "\n".join(history_lines) if history_lines else "None"
+
         # 5. Build Prompt
         prompt_template = PromptTemplate(
-            input_variables=["context", "question", "language"],
+            input_variables=["context", "question", "language", "chat_history"],
             template="""You are a professional shopping assistant for an online store.
 Your goal is to answer the user's question about products based ONLY on the catalog context provided below.
 
@@ -266,8 +282,12 @@ Instructions:
 1. Use the provided context to answer questions about prices, ratings, and features.
 2. If the user asks for suggestions, recommend the most relevant products from the context.
 3. If the context does not contain enough information to answer the question, politely tell the user that you don't have that information in the catalog.
-4. At the very end of your response, write a tag list containing only the indices of the products (e.g. 1, 2, 3) that are relevant to the user's query and match their criteria. Format it exactly as: [RELEVANT_PRODUCTS: 1, 2]
+4. Consider the Conversation History below if the user's question is a follow-up.
+5. At the very end of your response, write a tag list containing only the indices of the products (e.g. 1, 2, 3) that are relevant to the user's query and match their criteria. Format it exactly as: [RELEVANT_PRODUCTS: 1, 2]
 If none of the products match the criteria, format it exactly as: [RELEVANT_PRODUCTS: None]
+
+Conversation History:
+{chat_history}
 
 Catalog Context:
 {context}
@@ -284,7 +304,8 @@ Assistant Answer:"""
         response = chain.invoke({
             "context": context,
             "question": user_query,
-            "language": parsed_query.get("language", "English")
+            "language": parsed_query.get("language", "English"),
+            "chat_history": history_context
         })
         
         raw_answer = response.content

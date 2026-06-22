@@ -172,7 +172,7 @@ if "last_retrieved_docs" not in st.session_state:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-        if "products" in message and message["products"]:
+        if "products" in message and message["products"] and len(message["products"]) > 0:
             cols = st.columns(min(3, len(message["products"])))
             for i, p in enumerate(message["products"][:3]):
                 with cols[i]:
@@ -223,7 +223,7 @@ if prompt:
                     'productURL': payload.get('productURL')
                 })
             
-            if product_list:
+            if product_list and len(product_list) > 0:
                 cols = st.columns(min(3, len(product_list)))
                 for i, p in enumerate(product_list[:3]):
                     with cols[i]:
