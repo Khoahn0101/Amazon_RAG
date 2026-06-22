@@ -94,17 +94,21 @@ Output a raw JSON object (WITHOUT any markdown formatting or code blocks) with t
 - "stars_min": The minimum star rating float if specified or implied (null if not). For phrases like "best/highly rated", use 4.0. If previously specified, inherit or adapt that limit.
 - "target_category": The specific product category to filter by if implied (must be from Valid Categories, or null).
 - "use_previous_context": A boolean (true or false) indicating whether this query is a follow-up about the *previously retrieved products* without introducing new search terms.
+- "exclude_previous": A boolean (true or false) indicating if the user specifically asks for *other*, *different*, or *alternative* options besides the ones just shown (e.g., 'còn cái nào khác không', 'other toys').
 
 Valid Categories: [{categories_str}]
 
 Example: "luggage under $150 with at least 4 stars"
-Output: {{"clean_query": "luggage", "language": "English", "price_max": 150.0, "stars_min": 4.0, "target_category": "Luggage", "use_previous_context": false}}
+Output: {{"clean_query": "luggage", "language": "English", "price_max": 150.0, "stars_min": 4.0, "target_category": "Luggage", "use_previous_context": false, "exclude_previous": false}}
 
 Example: "vali kéo giá rẻ màu đỏ"
-Output: {{"clean_query": "red suitcase", "language": "Vietnamese", "price_max": 50.0, "stars_min": null, "target_category": "Luggage", "use_previous_context": false}}
+Output: {{"clean_query": "red suitcase", "language": "Vietnamese", "price_max": 50.0, "stars_min": null, "target_category": "Luggage", "use_previous_context": false, "exclude_previous": false}}
 
 Example: "cho tôi thêm thông tin về các sản phẩm trên" (when previous turn recommended suitcases)
-Output: {{"clean_query": "", "language": "Vietnamese", "price_max": null, "stars_min": null, "target_category": null, "use_previous_context": true}}
+Output: {{"clean_query": "", "language": "Vietnamese", "price_max": null, "stars_min": null, "target_category": null, "use_previous_context": true, "exclude_previous": false}}
+
+Example: "ngoài ra còn mẫu nào khác không" (when previous turn recommended suitcases)
+Output: {{"clean_query": "suitcases", "language": "Vietnamese", "price_max": null, "stars_min": null, "target_category": null, "use_previous_context": false, "exclude_previous": true}}
 """
         # Ask LLM to parse the query and extract metadata
         user_input_with_history = f"{history_context}Current User Query: {user_query}"
@@ -138,7 +142,8 @@ Output: {{"clean_query": "", "language": "Vietnamese", "price_max": null, "stars
                 "price_max": None,
                 "stars_min": None,
                 "target_category": None,
-                "use_previous_context": False
+                "use_previous_context": False,
+                "exclude_previous": False
             }
 
     def build_qdrant_filter(self, parsed_query: dict) -> qmodels.Filter:
@@ -212,6 +217,11 @@ Output: {{"clean_query": "", "language": "Vietnamese", "price_max": null, "stars
         parsed_query = self.preprocess_query(user_query, chat_history)
         clean_query = parsed_query["clean_query"]
         use_previous = parsed_query.get("use_previous_context", False)
+        exclude_previous = parsed_query.get("exclude_previous", False)
+        
+        # If user wants other options, we definitely shouldn't just use previous context
+        if exclude_previous:
+            use_previous = False
         
         # 3. Retrieve Context
         if use_previous and previous_docs:
@@ -220,7 +230,15 @@ Output: {{"clean_query": "", "language": "Vietnamese", "price_max": null, "stars
         else:
             # 2. Build Filter
             qdrant_filter = self.build_qdrant_filter(parsed_query)
-            search_results = self.search_products(clean_query, qdrant_filter, top_k=5)
+            
+            # Retrieve more items in case we need to filter out previous ones
+            fetch_k = 15 if exclude_previous else 5
+            search_results = self.search_products(clean_query, qdrant_filter, top_k=fetch_k)
+            
+            # Filter out previous items if requested
+            if exclude_previous and previous_docs:
+                previous_urls = {doc.payload.get("productURL") for doc in previous_docs if doc.payload.get("productURL")}
+                search_results = [res for res in search_results if res.payload.get("productURL") not in previous_urls]
             
             # Sort results in Python:
             # 1. By stars rating (descending)
