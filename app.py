@@ -172,13 +172,32 @@ if "last_retrieved_docs" not in st.session_state:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-        if "products" in message:
+        if "products" in message and message["products"]:
             cols = st.columns(min(3, len(message["products"])))
             for i, p in enumerate(message["products"][:3]):
                 with cols[i]:
                     render_product_card(p)
 
-if prompt := st.chat_input("What are you looking for today?"):
+# Quick Suggestion Buttons when chat is empty
+suggested_prompt = None
+if not st.session_state.messages:
+    st.markdown("### 💡 Quick Suggestions / Gợi ý tìm kiếm:")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✈️ Suitcases under $100 with at least 4 stars"):
+            suggested_prompt = "Suitcases under $100 with at least 4 stars"
+        if st.button("🎒 Highly rated backpacks for school"):
+            suggested_prompt = "Highly rated backpacks for school"
+    with col2:
+        if st.button("🏷️ Khay gương trang trí đang giảm giá"):
+            suggested_prompt = "Khay gương trang trí đang giảm giá"
+        if st.button("🧸 Đồ chơi bé gái dưới 50 đô và từ 4.5 sao"):
+            suggested_prompt = "Đồ chơi bé gái dưới 50 đô và từ 4.5 sao"
+
+prompt_input = st.chat_input("What are you looking for today?")
+prompt = prompt_input or suggested_prompt
+
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
