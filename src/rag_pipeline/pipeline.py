@@ -266,6 +266,8 @@ Instructions:
 1. Use the provided context to answer questions about prices, ratings, and features.
 2. If the user asks for suggestions, recommend the most relevant products from the context.
 3. If the context does not contain enough information to answer the question, politely tell the user that you don't have that information in the catalog.
+4. At the very end of your response, write a tag list containing only the indices of the products (e.g. 1, 2, 3) that are relevant to the user's query and match their criteria. Format it exactly as: [RELEVANT_PRODUCTS: 1, 2]
+If none of the products match the criteria, format it exactly as: [RELEVANT_PRODUCTS: None]
 
 Catalog Context:
 {context}
@@ -285,5 +287,28 @@ Assistant Answer:"""
             "language": parsed_query.get("language", "English")
         })
         
-        return response.content, top_results
-
+        raw_answer = response.content
+        
+        # Regex to find [RELEVANT_PRODUCTS: 1, 2, 3] or [RELEVANT_PRODUCTS: None]
+        tag_match = re.search(r'\[RELEVANT_PRODUCTS:\s*([^\]]+)\]', raw_answer)
+        
+        relevant_docs = top_results
+        cleaned_answer = raw_answer
+        
+        if tag_match:
+            tag_content = tag_match.group(1).strip()
+            # Remove the tag from the answer so the user doesn't see it in the UI
+            cleaned_answer = re.sub(r'\[RELEVANT_PRODUCTS:\s*[^\]]+\]', '', raw_answer).strip()
+            
+            if tag_content.lower() != 'none':
+                try:
+                    # Split by comma, strip, convert to int, and subtract 1 for 0-based indexing
+                    indices = [int(idx.strip()) - 1 for idx in tag_content.split(',') if idx.strip().isdigit()]
+                    # Filter top_results
+                    relevant_docs = [top_results[i] for i in indices if 0 <= i < len(top_results)]
+                except Exception as e:
+                    print(f"Error parsing relevant product indices: {e}")
+            else:
+                relevant_docs = []
+                
+        return cleaned_answer, relevant_docs
